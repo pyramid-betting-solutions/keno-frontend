@@ -1,4 +1,4 @@
-# Lottery Frontend - Cashier Interface
+echo "# Lottery Frontend - Cashier Interface
 
 ## Tech Stack
 - React 18 + TypeScript
@@ -7,8 +7,8 @@
 - Axios for API calls
 
 ## Development
-```bash
+\`\`\`bash
 npm install
 npm run dev
-```
-
+\`\`\`
+" > README.md
