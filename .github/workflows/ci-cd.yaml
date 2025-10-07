@@ -1,0 +1,55 @@
+name: CI / Build / GitOps - Frontend
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_REPO: dockerhub_username/your-app-frontend
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPO }}:${{ github.sha }}
+            ${{ env.IMAGE_REPO }}:latest
+
+      - name: Update GitOps repo with new image tag
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          git config --global user.email "ci-bot@yourorg.com"
+          git config --global user.name "CI Bot"
+          git clone https://x-access-token:${{ secrets.GITOPS_REPO_TOKEN }}@github.com/your-org/gitops.git
+          cd gitops/charts/frontend
+          sed -i "s/^  tag: .*$/  tag: \"${IMAGE_TAG}\"/" values.yaml
+          git add values.yaml
+          git commit -m "ci: set image tag ${IMAGE_TAG}"
+          git push origin HEAD:main
